@@ -52,15 +52,21 @@ class TokenView(CsrfExemptMixin, OAuthLibMixin, APIView):
     def post(self, request, *args, **kwargs):
         # Use the rest framework `.data` to fake the post body of the django request.
         mutable_data = request.data.copy()
+        print('yep')
         request._request.POST = request._request.POST.copy()
+        print('yep')
         for key, value in mutable_data.items():
             request._request.POST[key] = value
+            print('yep-bucle')
 
         url, headers, body, status = self.create_token_response(request._request)
+        print('yep')
         response = Response(data=json.loads(body), status=status)
+        print('yep')
 
         for k, v in headers.items():
             response[k] = v
+            print('yep')
         return response
 
 
