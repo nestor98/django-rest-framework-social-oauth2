@@ -86,7 +86,7 @@ class ConvertTokenView(CsrfExemptMixin, OAuthLibMixin, APIView):
         print('yep')
         request._request.POST = request._request.POST.copy()
         print('yep')
-        for key, value in mutable_data.items():
+        for key, value in request.data.items()#mutable_data.items():
             request._request.POST[key] = value
             print('yep-bucle')
 
