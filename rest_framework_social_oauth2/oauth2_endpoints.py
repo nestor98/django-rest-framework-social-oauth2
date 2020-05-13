@@ -75,5 +75,7 @@ class SocialTokenServer(TokenEndpoint):
                                                   self.default_grant_type_handler)
         log.debug('Dispatching grant_type %s request to %r.',
                   request.grant_type, grant_type_handler)
+        print('Dispatching grant_type %s request to %r.',
+                            request.grant_type, grant_type_handler)
         return grant_type_handler.create_token_response(
             request, self.default_token_type)
