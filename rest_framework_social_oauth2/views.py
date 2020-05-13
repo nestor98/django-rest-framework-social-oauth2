@@ -88,7 +88,8 @@ class ConvertTokenView(CsrfExemptMixin, OAuthLibMixin, APIView):
         print('yep')
         for key, value in request.data.items():#mutable_data.items():
             request._request.POST[key] = value
-            print('yep-bucle')
+            print('clave, valor')
+            print(request._request.POST[key], value)
 
         url, headers, body, status = self.create_token_response(request._request)
         print('yep')
