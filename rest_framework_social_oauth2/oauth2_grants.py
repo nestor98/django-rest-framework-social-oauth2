@@ -34,7 +34,7 @@ class SocialTokenGrant(RefreshTokenGrant):
         # we are going to get some AttributeError later
         request._params.setdefault("backend", None)
         request._params.setdefault("client_secret", None)
-
+        print('request:', request,'grant_type:', request.grant_type)
         if request.grant_type != 'convert_token':
             raise errors.UnsupportedGrantTypeError(request=request)
 
@@ -103,6 +103,6 @@ class SocialTokenGrant(RefreshTokenGrant):
 
         if not user.is_active:
             raise errors.InvalidGrantError('User inactive or deleted.', request=request)
-        
+
         request.user = user
         log.debug('Authorizing access to user %r.', request.user)
