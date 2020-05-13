@@ -63,8 +63,10 @@ class SocialTokenServer(TokenEndpoint):
     def create_token_response(self, uri, http_method='GET', body=None,
                               headers=None, credentials=None):
         """Extract grant_type and route to the designated handler."""
+        print('uri en create_token_response...', uri)
         request = Request(
             uri, http_method=http_method, body=body, headers=headers)
+        print('request:', request)
         request.scopes = None
         request.extra_credentials = credentials
 
