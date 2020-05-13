@@ -1,13 +1,9 @@
+# -*- coding: utf-8 -*-
 import json
 
-from django.urls import reverse
-from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import csrf_exempt
+from braces.views import CsrfExemptMixin
 from oauthlib.oauth2.rfc6749.endpoints.token import TokenEndpoint
-from social_core.exceptions import MissingBackend
-from social_django.utils import load_strategy, load_backend
-from social_django.views import NAMESPACE
-
+from oauth2_provider.oauth2_backends import OAuthLibCore
 from oauth2_provider.contrib.rest_framework import OAuth2Authentication
 from oauth2_provider.models import Application, AccessToken
 from oauth2_provider.settings import oauth2_settings
@@ -22,18 +18,6 @@ from .oauth2_backends import KeepRequestCore
 from .oauth2_endpoints import SocialTokenServer
 
 
-class CsrfExemptMixin(object):
-    """
-    Exempts the view from CSRF requirements.
-    NOTE:
-        This should be the left-most mixin of a view.
-    """
-
-    @method_decorator(csrf_exempt)
-    def dispatch(self, *args, **kwargs):
-        return super(CsrfExemptMixin, self).dispatch(*args, **kwargs)
-
-
 class TokenView(CsrfExemptMixin, OAuthLibMixin, APIView):
     """
     Implements an endpoint to provide access tokens
@@ -46,19 +30,17 @@ class TokenView(CsrfExemptMixin, OAuthLibMixin, APIView):
     """
     server_class = oauth2_settings.OAUTH2_SERVER_CLASS
     validator_class = oauth2_settings.OAUTH2_VALIDATOR_CLASS
-    oauthlib_backend_class = oauth2_settings.OAUTH2_BACKEND_CLASS
+    oauthlib_backend_class = OAuthLibCore
     permission_classes = (permissions.AllowAny,)
 
     def post(self, request, *args, **kwargs):
         # Use the rest framework `.data` to fake the post body of the django request.
-        mutable_data = request.data.copy()
         request._request.POST = request._request.POST.copy()
-        for key, value in mutable_data.items():
+        for key, value in request.data.items():
             request._request.POST[key] = value
 
         url, headers, body, status = self.create_token_response(request._request)
         response = Response(data=json.loads(body), status=status)
-
 
         for k, v in headers.items():
             response[k] = v
@@ -81,27 +63,28 @@ class ConvertTokenView(CsrfExemptMixin, OAuthLibMixin, APIView):
 
     def post(self, request, *args, **kwargs):
         # Use the rest framework `.data` to fake the post body of the django request.
-        mutable_data = request.data.copy()
-
-        print('yep')
+        print('a')
         request._request.POST = request._request.POST.copy()
-        print('yep')
-        for key, value in request.data.items():#mutable_data.items():
+        if request._request.POST._mutable:
+            print('afjdnsfdaljns')
+        print('a')
+        mutable = request.data.copy()
+        print(mutable)
+        for key, value in mutable.items():
+            print(key, value)
+            request._request.POST = request._request.POST.copy()
+            if request._request.POST._mutable:
+                print('afjdnsfdaljns')
             request._request.POST[key] = value
-            print('clave, valor')
-            print(key, request._request.POST[key], value)
+            print('ab')
 
+        print('POST:', request._request.POST)
         url, headers, body, status = self.create_token_response(request._request)
-        print('url, headers, body, status')
-        print(url, headers, body, status)
-        print('yep')
         response = Response(data=json.loads(body), status=status)
-        print('yep')
-
+        print('a')
         for k, v in headers.items():
             response[k] = v
-
-            print('yep-bucle2')
+        print('af')
         return response
 
 
@@ -111,14 +94,13 @@ class RevokeTokenView(CsrfExemptMixin, OAuthLibMixin, APIView):
     """
     server_class = oauth2_settings.OAUTH2_SERVER_CLASS
     validator_class = oauth2_settings.OAUTH2_VALIDATOR_CLASS
-    oauthlib_backend_class = oauth2_settings.OAUTH2_BACKEND_CLASS
+    oauthlib_backend_class = OAuthLibCore
     permission_classes = (permissions.AllowAny,)
 
     def post(self, request, *args, **kwargs):
         # Use the rest framework `.data` to fake the post body of the django request.
-        mutable_data = request.data.copy()
         request._request.POST = request._request.POST.copy()
-        for key, value in mutable_data.items():
+        for key, value in request.data.items():
             request._request.POST[key] = value
 
         url, headers, body, status = self.create_revocation_response(request._request)
@@ -133,7 +115,7 @@ class RevokeTokenView(CsrfExemptMixin, OAuthLibMixin, APIView):
 @authentication_classes([OAuth2Authentication])
 @permission_classes([permissions.IsAuthenticated])
 def invalidate_sessions(request):
-    client_id = request.data.get("client_id", None)
+    client_id = request.POST.get("client_id", None)
     if client_id is None:
         return Response({
             "client_id": ["This field is required."]
@@ -149,35 +131,3 @@ def invalidate_sessions(request):
     tokens = AccessToken.objects.filter(user=request.user, application=app)
     tokens.delete()
     return Response({}, status=status.HTTP_204_NO_CONTENT)
-
-
-class DisconnectBackendView(APIView):
-    """
-    An endpoint for disconnect social auth backend providers such as Facebook.
-    """
-    permission_classes = (permissions.IsAuthenticated, )
-
-    def get_object(self, queryset=None):
-        return self.request.user
-
-    def post(self, request, *args, **kwargs):
-        backend = request.data.get("backend", None)
-        if backend is None:
-            return Response({
-                "backend": ["This field is required."]
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-        association_id = request.data.get("association_id", None)
-        if association_id is None:
-            return Response({
-                "association_id": ["This field is required."]
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-        strategy = load_strategy(request=request)
-        try:
-            backend = load_backend(strategy, backend, reverse(NAMESPACE + ":complete", args=(backend,)))
-        except MissingBackend:
-            return Response({"backend": ["Invalid backend."]}, status=status.HTTP_400_BAD_REQUEST)
-
-        backend.disconnect(user=self.get_object(), association_id=association_id, *args, **kwargs)
-        return Response(status=status.HTTP_204_NO_CONTENT)

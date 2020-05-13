@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 try:
     from django.urls import reverse
 except ImportError:  # Will be removed in Django 2.0
@@ -10,8 +12,6 @@ from social_django.views import NAMESPACE
 from social_django.utils import load_backend, load_strategy
 from social_core.exceptions import MissingBackend
 from social_core.utils import requests
-
-from .settings import DRFSO2_URL_NAMESPACE
 
 
 class SocialAuthentication(BaseAuthentication):
@@ -54,7 +54,7 @@ class SocialAuthentication(BaseAuthentication):
         strategy = load_strategy(request=request)
 
         try:
-            backend = load_backend(strategy, backend, reverse("%s:%s:complete" % (DRFSO2_URL_NAMESPACE, NAMESPACE), args=(backend,)))
+            backend = load_backend(strategy, backend, reverse(NAMESPACE + ":complete", args=(backend,)))
         except MissingBackend:
             msg = 'Invalid token header. Invalid backend.'
             raise exceptions.AuthenticationFailed(msg)

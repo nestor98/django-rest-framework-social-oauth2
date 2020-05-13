@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+
+from __future__ import unicode_literals
+
 import logging
 
 try:
@@ -12,8 +16,6 @@ from social_django.views import NAMESPACE
 from social_django.utils import load_backend, load_strategy
 from social_core.exceptions import MissingBackend, SocialAuthBaseException
 from social_core.utils import requests
-
-from .settings import DRFSO2_URL_NAMESPACE
 
 
 log = logging.getLogger(__name__)
@@ -34,7 +36,7 @@ class SocialTokenGrant(RefreshTokenGrant):
         # we are going to get some AttributeError later
         request._params.setdefault("backend", None)
         request._params.setdefault("client_secret", None)
-        print('request:', request,'grant_type:', request.grant_type)
+
         if request.grant_type != 'convert_token':
             raise errors.UnsupportedGrantTypeError(request=request)
 
@@ -82,7 +84,7 @@ class SocialTokenGrant(RefreshTokenGrant):
 
         try:
             backend = load_backend(strategy, request.backend,
-                                   reverse("%s:%s:complete" % (DRFSO2_URL_NAMESPACE, NAMESPACE) , args=(request.backend,)))
+                                   reverse(NAMESPACE + ":complete", args=(request.backend,)))
         except MissingBackend:
             raise errors.InvalidRequestError(
                 description='Invalid backend parameter.',
@@ -103,6 +105,6 @@ class SocialTokenGrant(RefreshTokenGrant):
 
         if not user.is_active:
             raise errors.InvalidGrantError('User inactive or deleted.', request=request)
-
+        
         request.user = user
         log.debug('Authorizing access to user %r.', request.user)
